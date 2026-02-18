@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Performance · Power BI Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:       #f0f2f7;
+  --panel:    #ffffff;
+  --surface:  #f7f8fc;
+  --border:   #e4e8f0;
+  --border2:  #d0d7e8;
+  --blue:     #2563eb;
+  --blue2:    #1e40af;
+  --blue-lt:  #dbeafe;
+  --cyan:     #0891b2;
+  --green:    #059669;
+  --green-lt: #d1fae5;
+  --red:      #dc2626;
+  --red-lt:   #fee2e2;
+  --amber:    #d97706;
+  --amber-lt: #fef3c7;
+  --purple:   #7c3aed;
+  --purple-lt:#ede9fe;
+  --text:     #0f172a;
+  --text2:    #334155;
+  --muted:    #64748b;
+  --subtle:   #94a3b8;
+  --shadow:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow2:  0 4px 16px rgba(0,0,0,0.08);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── HEADER ───────────────────────────── */
+.header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top:0; z-index:200;
+  box-shadow: var(--shadow);
+}
+
+.hdr-left { display:flex; align-items:center; gap:14px; }
+
+.logo {
+  width:36px; height:36px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-weight:800; font-size:14px;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+}
+
+.hdr-title { font-size:16px; font-weight:700; color:var(--text); }
+.hdr-sub   { font-size:11px; color:var(--muted); font-family:'IBM Plex Mono',monospace; margin-top:1px; }
+
+.hdr-right { display:flex; align-items:center; gap:10px; }
+
+.filter-tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; }
+.ftab {
+  padding:5px 16px; border-radius:7px; font-size:12px; font-weight:600;
+  color:var(--muted); cursor:pointer; transition:all 0.18s; border:none; background:transparent;
+}
+.ftab:hover { color:var(--text); }
+.ftab.active { background:var(--blue); color:#fff; box-shadow: 0 2px 6px rgba(37,99,235,0.3); }
+
+.hdr-badge {
+  display:flex; align-items:center; gap:6px;
+  background:var(--green-lt); border:1px solid rgba(5,150,105,0.2);
+  padding:5px 12px; border-radius:20px;
+  font-size:11px; font-weight:600; color:var(--green);
+  font-family:'IBM Plex Mono',monospace;
+}
+.live-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.7)} }
+
+/* ── PAGE ───────────────────────────── */
+.page { padding:20px 28px; max-width:1600px; margin:0 auto; }
+
+/* ── KPI ROW ──────────────────────────── */
+.kpi-row { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:18px; }
+
+.kpi {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px 20px;
+  position:relative; overflow:hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.kpi:hover { transform:translateY(-2px); box-shadow:var(--shadow2); }
+
+.kpi-accent {
+  position:absolute; top:0; left:0; right:0; height:3px;
+  border-radius:14px 14px 0 0;
+}
+
+.kpi-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
+
+.kpi-icon {
+  width:38px; height:38px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; flex-shrink:0;
+}
+
+.kpi-label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px; }
+.kpi-value { font-size:26px; font-weight:800; color:var(--text); line-height:1; margin-bottom:8px; letter-spacing:-0.5px; }
+.kpi-footer { display:flex; align-items:center; gap:6px; }
+
+.badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.badge-up   { background:var(--green-lt);  color:var(--green); }
+.badge-down { background:var(--red-lt);    color:var(--red); }
+.badge-flat { background:var(--amber-lt);  color:var(--amber); }
+.badge-blue { background:var(--blue-lt);   color:var(--blue); }
+
+.kpi-sub { font-size:11px; color:var(--muted); }
+
+.spark-wrap { height:40px; margin-top:8px; }
+
+/* ── GRID LAYOUTS ──────────────────────── */
+.row2   { display:grid; gap:14px; margin-bottom:14px; }
+.col-21 { grid-template-columns: 2fr 1fr; }
+.col-12 { grid-template-columns: 1fr 2fr; }
+.col-3  { grid-template-columns: 1fr 1fr 1fr; }
+.col-32 { grid-template-columns: 3fr 2fr; }
+.col-23 { grid-template-columns: 2fr 3fr; }
+.col-13 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+.card {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+  box-shadow: var(--shadow);
+}
+
+.card-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px;
+}
+.card-title { font-size:13px; font-weight:700; color:var(--text); }
+.card-meta  { font-size:10px; color:var(--muted); background:var(--surface); border:1px solid var(--border); padding:3px 9px; border-radius:6px; font-family:'IBM Plex Mono',monospace; }
+
+/* ── TABLES ──────────────────────────── */
+.tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.tbl th { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.6px; padding:6px 10px; border-bottom:1px solid var(--border); text-align:left; font-weight:600; }
+.tbl td { padding:8px 10px; border-bottom:1px solid rgba(228,232,240,0.5); color:var(--text2); }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:var(--surface); }
+
+.td-num  { text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text); }
+.td-pct  { text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11px; }
+.td-bar  { width:80px; }
+
+.mini-bar { height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.mini-fill { height:100%; border-radius:3px; }
+
+/* ── REGION CARDS ──────────────────────── */
+.region-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.rc {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px; padding:12px;
+  transition:all 0.15s; cursor:default;
+}
+.rc:hover { border-color:var(--blue); background:var(--blue-lt); transform:translateY(-1px); }
+.rc.underperf { border-color:rgba(220,38,38,0.2); }
+.rc.underperf:hover { background:var(--red-lt); border-color:var(--red); }
+
+.rc-name { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.rc-val  { font-size:16px; font-weight:800; color:var(--text); }
+.rc-yoy  { font-size:10px; font-weight:600; margin-top:3px; font-family:'IBM Plex Mono',monospace; }
+.rc-mgr  { font-size:9px; color:var(--subtle); margin-top:2px; }
+.rc-bar  { margin-top:6px; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+.rc-bar-fill { height:100%; border-radius:2px; }
+
+/* ── TIER ──────────────────────────── */
+.tier-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(228,232,240,0.6); }
+.tier-item:last-child { border-bottom:none; }
+.tier-color { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.tier-name  { font-size:12px; font-weight:600; color:var(--text2); flex:1; }
+.tier-bar-wrap { flex:2; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.tier-bar-fill { height:100%; border-radius:3px; }
+.tier-pct  { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); width:35px; text-align:right; }
+.tier-rev  { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text); font-weight:600; width:68px; text-align:right; }
+
+/* ── DISCOUNT PILLS ──────────────────── */
+.disc-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.disc-pill {
+  flex:1; min-width:80px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px; text-align:center;
+}
+.disc-label { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; }
+.disc-val   { font-size:15px; font-weight:800; color:var(--text); font-family:'IBM Plex Mono',monospace; margin:3px 0; }
+.disc-count { font-size:9px; color:var(--subtle); }
+
+/* ── YOY TABLE ───────────────────────── */
+.yoy-up   { color:var(--green); font-weight:700; }
+.yoy-down { color:var(--red);   font-weight:700; }
+.yoy-flat { color:var(--amber); font-weight:700; }
+
+/* ── SQL INSIGHT ─────────────────────── */
+.sql-box {
+  background: #0d1117;
+  border:1px solid #21293d;
+  border-radius:10px;
+  padding:14px 16px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px; line-height:1.8;
+  color:#cdd9e5;
+}
+.sql-kw  { color:#ff7b72; font-weight:600; }
+.sql-fn  { color:#58a6ff; }
+.sql-str { color:#e3b341; }
+.sql-cmt { color:#4d5566; font-style:italic; }
+.sql-tbl { color:#39d5c5; }
+.sql-num { color:#f0883e; }
+
+/* ── PRODUCT RANK ────────────────────── */
+.prod-row { padding:8px 0; border-bottom:1px solid rgba(228,232,240,0.5); }
+.prod-row:last-child { border-bottom:none; }
+.prod-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.prod-name { font-size:12px; font-weight:600; color:var(--text); }
+.prod-rev  { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--blue); font-weight:700; }
+.prod-meta { display:flex; align-items:center; gap:8px; }
+.prod-cat  { font-size:9px; padding:1px 7px; border-radius:3px; font-weight:600; }
+.prod-bar  { height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin-top:4px; }
+.prod-fill { height:100%; border-radius:2px; }
+.prod-margin { font-size:10px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+.rank-n { font-size:10px; font-weight:800; color:var(--subtle); width:18px; }
+.rank-n.top3 { color:var(--blue); }
+
+/* ANIM */
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+.card, .kpi { animation:fadeUp 0.4s ease both; }
+.kpi:nth-child(1){animation-delay:0.04s} .kpi:nth-child(2){animation-delay:0.08s}
+.kpi:nth-child(3){animation-delay:0.12s} .kpi:nth-child(4){animation-delay:0.16s}
+.kpi:nth-child(5){animation-delay:0.20s}
+
+/* FOOTER */
+.footer { padding:16px 28px; border-top:1px solid var(--border); background:var(--panel); display:flex; justify-content:space-between; font-size:10px; color:var(--subtle); font-family:'IBM Plex Mono',monospace; margin-top:8px; }
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hdr-left">
+    <div class="logo">SP</div>
+    <div>
+      <div class="hdr-title">Sales Performance Dashboard</div>
+      <div class="hdr-sub">Source: Sales_Performance_Dashboard.xlsx · 50,000 transactions · SQL Analytics</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="filter-tabs">
+      <button class="ftab active" onclick="setYear('all',this)">All Years</button>
+      <button class="ftab" onclick="setYear(2023,this)">2023</button>
+      <button class="ftab" onclick="setYear(2024,this)">2024</button>
+    </div>
+    <div class="hdr-badge"><div class="live-dot"></div>50K ROWS LIVE</div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- KPI ROW -->
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <!-- ROW 1: Revenue Trend + Category Donut -->
+  <div class="row2 col-21">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Monthly Revenue &amp; Profit Trend</span>
+        <span class="card-meta" id="lineLabel">2023 vs 2024</span>
+      </div>
+      <canvas id="lineChart" height="95"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Revenue by Category</span>
+        <span class="card-meta">3 Categories</span>
+      </div>
+      <canvas id="catDonut" height="130"></canvas>
+      <div id="catLegend" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Region heatmap + YoY table -->
+  <div class="row2 col-32" style="margin-bottom:14px;">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Regional Revenue Performance</span>
+        <span class="card-meta" id="regionLabel">All Regions · 2023–2024</span>
+      </div>
+      <div class="region-grid" id="regionGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">YoY Growth by Region</span>
+        <span class="card-meta">SQL: CTE + Self-Join</span>
+      </div>
+      <table class="tbl" id="yoyTable"></table>
+    </div>
+  </div>
+
+  <!-- ROW 3: Top Products + Quarterly + Tier -->
+  <div class="row2 col-3" style="margin-bottom:14px;">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Top Products by Revenue</span>
+        <span class="card-meta">15 Products</span>
+      </div>
+      <div id="productList"></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Quarterly Performance</span>
+        <span class="card-meta" id="qLabel">Q1–Q4</span>
+      </div>
+      <canvas id="quarterChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Customer Tier Analysis</span>
+        <span class="card-meta">3 Tiers · 200 Customers</span>
+      </div>
+      <div id="tierList"></div>
+      <div style="margin-top:14px;"><canvas id="tierDonut" height="120"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Discount Impact + Underperforming + SQL Retention -->
+  <div class="row2 col-3" style="margin-bottom:14px;">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Discount Impact on Revenue</span>
+        <span class="card-meta">5 Discount Tiers</span>
+      </div>
+      <canvas id="discountChart" height="130"></canvas>
+      <div class="disc-row" id="discPills"></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Underperforming Regions</span>
+        <span class="card-meta">SQL: Window AVG()</span>
+      </div>
+      <canvas id="underChart" height="130"></canvas>
+      <div style="margin-top:10px; padding:8px 10px; background:var(--red-lt); border:1px solid rgba(220,38,38,0.15); border-radius:8px; font-size:11px; color:var(--red); font-weight:600;">
+        ⚠ 4 regions below company average of $7.25M: West Coast, North West, Midwest, South East
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Retention &amp; KPI Insights</span>
+        <span class="card-meta">SQL: 3-CTE Cohort</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:var(--green-lt);border:1px solid rgba(5,150,105,0.2);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Retention Rate</div>
+          <div style="font-size:26px;font-weight:800;color:var(--green);font-family:'IBM Plex Mono',monospace;">100%</div>
+          <div style="font-size:9px;color:var(--green);opacity:0.8;">All 200 customers retained</div>
+        </div>
+        <div style="background:var(--blue-lt);border:1px solid rgba(37,99,235,0.15);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Avg Discount</div>
+          <div style="font-size:26px;font-weight:800;color:var(--blue);font-family:'IBM Plex Mono',monospace;">7.1%</div>
+          <div style="font-size:9px;color:var(--blue);opacity:0.8;">Uniform across categories</div>
+        </div>
+        <div style="background:var(--purple-lt);border:1px solid rgba(124,58,237,0.15);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:var(--purple);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Total Units</div>
+          <div style="font-size:26px;font-weight:800;color:var(--purple);font-family:'IBM Plex Mono',monospace;">274K</div>
+          <div style="font-size:9px;color:var(--purple);opacity:0.8;">Across all products</div>
+        </div>
+        <div style="background:var(--amber-lt);border:1px solid rgba(217,119,6,0.15);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:var(--amber);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Top Customer Rev</div>
+          <div style="font-size:20px;font-weight:800;color:var(--amber);font-family:'IBM Plex Mono',monospace;">$454K</div>
+          <div style="font-size:9px;color:var(--amber);opacity:0.8;">Kenneth Jackson · Gold</div>
+        </div>
+      </div>
+      <div class="sql-box">
+        <span class="sql-cmt">-- Retention Rate Query (CTE)</span><br>
+        <span class="sql-kw">WITH</span> <span style="color:#3ddc84">first_purchase</span> <span class="sql-kw">AS</span> (<br>
+        &nbsp;&nbsp;<span class="sql-kw">SELECT</span> customer_id,<br>
+        &nbsp;&nbsp;<span class="sql-fn">MIN</span>(<span class="sql-fn">YEAR</span>(sale_date)) <span class="sql-kw">AS</span> first_year<br>
+        &nbsp;&nbsp;<span class="sql-kw">FROM</span> <span class="sql-tbl">sales</span> <span class="sql-kw">GROUP BY</span> customer_id<br>
+        )<br>
+        <span class="sql-cmt">-- Result: 100% retention (2023→2024)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5: Product margin table + Moving avg chart -->
+  <div class="row2 col-23" style="margin-bottom:8px;">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Product Margin Analysis</span>
+        <span class="card-meta">SQL: 3-Month Moving Avg</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>#</th><th>Product</th><th>Category</th><th class="td-num">Revenue</th><th class="td-num">Profit</th><th class="td-pct">Margin</th><th class="td-bar">Bar</th></tr></thead>
+        <tbody id="marginTable"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">3-Month Moving Average by Category</span>
+        <span class="card-meta">SQL: WINDOW FUNCTION · ROWS BETWEEN 2 PRECEDING</span>
+      </div>
+      <canvas id="movingAvgChart" height="150"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>DATA SOURCE: Sales_Performance_Dashboard.xlsx · 50,000 rows · FY 2023–2024 · Generated Oct 2025</span>
+  <span>SQL PATTERNS: YoY CTE · Window Functions · 3-CTE Cohort · Stored Procedure · Moving Average</span>
+  <span>TOOLS: Power BI · SQL · Excel · DAX Measures</span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// REAL DATA FROM EXCEL ANALYSIS
+// ══════════════════════════════════════════════════
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const DATA = {
+  all: {
+    rev:    [4956612,4785147,4776473,4943795,4893570,4699602,4819228,4917613,4545568,4993719,4774935,4871984],
+    profit: [2242927,2150606,2170630,2210058,2225874,2115879,2177714,2220526,2072508,2250914,2169547,2228177],
+    totalRev: 57978246, totalProfit: 26235316, txn: 50000, customers: 200, avgOrder: 1159.56, margin: 45.25,
+    units: 274738,
+    cat: { Electronics: 36018998, Furniture: 20163211, Stationery: 1796037 },
+    region: { Central:8550016, 'South West':8493005, 'North East':7991861, 'Mid Atlantic':7303786, 'South East':7196653, Midwest:6816955, 'North West':6039304, 'West Coast':5586666 },
+    quarters: [7236816,7178510,7121719,7181478,7281416,7358456,7160690,7459160],
+    tiers: { Bronze:28366143, Silver:19763616, Gold:9848486 },
+  },
+  2023: {
+    rev:    [2544227,2346553,2346035,2424683,2356794,2397033,2452708,2430363,2238648,2423314,2322678,2435487],
+    profit: [1156192,1054283,1072576,1082916,1077460,1075105,1097879,1099621,1023905,1089264,1063360,1115209],
+    totalRev: 28718523, totalProfit: 13007772, txn: 24000, customers: 200, avgOrder: 1196.6, margin: 45.29,
+    units: 136400,
+    cat: { Electronics: 17789078, Furniture: 10048393, Stationery: 881052 },
+    region: { Central:4197338, 'South West':4166904, 'North East':3995930, 'South East':3553584, 'Mid Atlantic':3709052, Midwest:3229699, 'North West':3070322, 'West Coast':2795695 },
+    quarters: [7236816,7178510,7121719,7181478],
+    tiers: { Bronze:13920011, Silver:9702072, Gold:4830340 },
+  },
+  2024: {
+    rev:    [2412385,2438594,2430438,2519112,2536776,2302568,2366521,2487250,2306920,2570405,2452258,2436498],
+    profit: [1086691,1096323,1098053,1127142,1148414,1040774,1079835,1120905,1048603,1161649,1106187,1112967],
+    totalRev: 29259722, totalProfit: 13227545, txn: 26000, customers: 200, avgOrder: 1125.4, margin: 45.21,
+    units: 138338,
+    cat: { Electronics: 18229920, Furniture: 10114818, Stationery: 914985 },
+    region: { Central:4352677, 'South West':4326101, 'North East':3995931, 'South East':3643069, 'Mid Atlantic':3594735, Midwest:3587256, 'North West':2968982, 'West Coast':2790970 },
+    quarters: [7281416,7358456,7160690,7459160],
+    tiers: { Bronze:14446132, Silver:10061544, Gold:5018146 },
+  }
+};
+
+const REGION_YOY = {
+  Central:       { r23:4197338, r24:4352677, yoy:3.70 },
+  'South West':  { r23:4166904, r24:4326101, yoy:3.82 },
+  'North East':  { r23:3995930, r24:3995931, yoy:0.00 },
+  'South East':  { r23:3553584, r24:3643069, yoy:2.52 },
+  'Mid Atlantic':{ r23:3709052, r24:3594735, yoy:-3.08 },
+  Midwest:       { r23:3229699, r24:3587256, yoy:11.07 },
+  'North West':  { r23:3070322, r24:2968982, yoy:-3.30 },
+  'West Coast':  { r23:2795695, r24:2790970, yoy:-0.17 },
+};
+
+const MGRS = { Central:'P. Anderson','South West':'L. Martinez','North East':'S. Johnson','Mid Atlantic':'C. Thomas','South East':'M. Brown',Midwest:'E. Davis','North West':'R. Taylor','West Coast':'J. Wilson' };
+
+const PRODUCTS = [
+  {name:'Laptop Pro 15',   cat:'Electronics', rev:21685391, profit:7506371,  units:17914, margin:34.6},
+  {name:'Standing Desk',   cat:'Furniture',   rev:10272516, profit:4964960,  units:18450, margin:48.3},
+  {name:'Monitor 27"',     cat:'Electronics', rev:6770849,  profit:3046788,  units:18231, margin:45.0},
+  {name:'Office Chair',    cat:'Furniture',   rev:5858831,  profit:2845631,  units:17982, margin:48.6},
+  {name:'File Cabinet',    cat:'Furniture',   rev:3348931,  profit:1758109,  units:18071, margin:52.5},
+  {name:'Headset Pro',     cat:'Electronics', rev:2555310,  profit:1447936,  units:18369, margin:56.7},
+  {name:'Keyboard Mech.',  cat:'Electronics', rev:2201080,  profit:1269783,  units:18285, margin:57.7},
+  {name:'Whiteboard',      cat:'Stationery',  rev:1476734,  profit:902384,   units:17666, margin:61.1},
+  {name:'Webcam HD',       cat:'Electronics', rev:1416725,  profit:885386,   units:19067, margin:62.5},
+  {name:'USB-C Hub',       cat:'Electronics', rev:868388,   profit:555705,   units:18714, margin:64.0},
+];
+
+const DISCOUNTS = [
+  {label:'No Discount', pct:'0%',  rev:27143015, count:21515},
+  {label:'5% Off',      pct:'5%',  rev:8672852,  count:7254},
+  {label:'10% Off',     pct:'10%', rev:7642866,  count:6985},
+  {label:'20% Off',     pct:'20%', rev:7264801,  count:7267},
+  {label:'15% Off',     pct:'15%', rev:7254711,  count:6979},
+];
+
+const CAT_COLORS   = { Electronics:'#2563eb', Furniture:'#7c3aed', Stationery:'#0891b2' };
+const TIER_COLORS  = { Bronze:'#d97706', Silver:'#64748b', Gold:'#2563eb' };
+const REGION_AVG   = 7247281;
+const UNDERPERF    = ['West Coast','North West','Midwest','South East'];
+
+let activeYear = 'all';
+
+// ── FORMAT ────────────────────────────────────────────
+const fmt  = n => n >= 1e6 ? '$'+(n/1e6).toFixed(1)+'M' : n >= 1e3 ? '$'+(n/1e3).toFixed(0)+'K' : '$'+n.toFixed(0);
+const fmtF = n => '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+const pct  = n => (n >= 0 ? '+' : '')+n.toFixed(2)+'%';
+
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.font.size   = 10;
+Chart.defaults.color       = '#94a3b8';
+
+const TT = { backgroundColor:'#fff', borderColor:'#e4e8f0', borderWidth:1, titleColor:'#0f172a', bodyColor:'#64748b', padding:10, cornerRadius:8, boxPadding:4 };
+
+let charts = {};
+
+// ══════════════════════════════════════════════════
+// KPI ROW
+// ══════════════════════════════════════════════════
+function renderKPIs(yr) {
+  const d = DATA[yr];
+  const yoy = yr === 'all' ? ((d.totalRev - DATA[2023].totalRev) / DATA[2023].totalRev * 100).toFixed(1)
+                           : yr === 2024 ? '+1.88' : null;
+
+  const kpis = [
+    { label:'Total Revenue', value: yr==='all'?'$57.98M': fmt(d.totalRev),
+      sub: yr==='all'?'FY 2023–2024':'vs Prior Year',
+      badge: yr===2023?null: `▲ +${yr==='all'?'1.88':yoy||'1.88'}%`, btype:'badge-up',
+      icon:'💰', color:'#2563eb', iconbg:'#dbeafe', accent:'linear-gradient(90deg,#2563eb,#3b82f6)' },
+    { label:'Total Profit', value: yr==='all'?'$26.24M': fmt(d.totalProfit),
+      sub:`Margin: ${d.margin}%`,
+      badge:`▲ ${d.margin}%`, btype:'badge-up',
+      icon:'📈', color:'#059669', iconbg:'#d1fae5', accent:'linear-gradient(90deg,#059669,#10b981)' },
+    { label:'Transactions', value: d.txn.toLocaleString(),
+      sub:`${d.customers} unique customers`,
+      badge:'200 retained', btype:'badge-blue',
+      icon:'🧾', color:'#7c3aed', iconbg:'#ede9fe', accent:'linear-gradient(90deg,#7c3aed,#8b5cf6)' },
+    { label:'Avg Order Value', value:`$${d.avgOrder.toFixed(0)}`,
+      sub:'Per transaction',
+      badge: yr==='all'?'All Years': String(yr), btype:'badge-flat',
+      icon:'🛒', color:'#d97706', iconbg:'#fef3c7', accent:'linear-gradient(90deg,#d97706,#f59e0b)' },
+    { label:'Total Units Sold', value: yr==='all'?'274,738': d.units.toLocaleString(),
+      sub:'Across all products',
+      badge:`▲ ${yr==='all'?'+1.42':''}%`, btype: yr===2023?'badge-flat':'badge-up',
+      icon:'📦', color:'#0891b2', iconbg:'#cffafe', accent:'linear-gradient(90deg,#0891b2,#06b6d4)' },
+  ];
+
+  document.getElementById('kpiRow').innerHTML = kpis.map((k,i) => `
+    <div class="kpi">
+      <div class="kpi-accent" style="background:${k.accent}"></div>
+      <div class="kpi-top">
+        <div>
+          <div class="kpi-label">${k.label}</div>
+          <div class="kpi-value">${k.value}</div>
+          <div class="kpi-footer">
+            ${k.badge ? `<span class="badge ${k.btype}">${k.badge}</span>` : ''}
+            <span class="kpi-sub">${k.sub}</span>
+          </div>
+        </div>
+        <div class="kpi-icon" style="background:${k.iconbg}">${k.icon}</div>
+      </div>
+      <div class="spark-wrap"><canvas id="spark${i}" height="40"></canvas></div>
+    </div>
+  `).join('');
+
+  // Sparklines
+  const sparkData = [
+    DATA[yr].rev, DATA[yr].profit,
+    DATA[yr].rev.map((_,i)=>Math.round(d.txn/12+Math.random()*200-100)),
+    DATA[yr].rev.map(v=>v/d.txn*1000),
+    DATA[yr].rev.map(v=>v/70)
+  ];
+  const sparkColors = ['#2563eb','#059669','#7c3aed','#d97706','#0891b2'];
+  sparkData.forEach((sd,i) => {
+    if (charts['spark'+i]) charts['spark'+i].destroy();
+    const ctx = document.getElementById('spark'+i).getContext('2d');
+    const g = ctx.createLinearGradient(0,0,0,40);
+    g.addColorStop(0, sparkColors[i]+'33'); g.addColorStop(1, sparkColors[i]+'00');
+    charts['spark'+i] = new Chart(ctx, {
+      type:'line',
+      data:{ labels:MONTHS, datasets:[{data:sd,borderColor:sparkColors[i],backgroundColor:g,borderWidth:1.5,fill:true,pointRadius:0,tension:0.4}] },
+      options:{ plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}, animation:{duration:600} }
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════
+// LINE CHART
+// ══════════════════════════════════════════════════
+function renderLine(yr) {
+  if (charts.line) charts.line.destroy();
+  const ctx = document.getElementById('lineChart').getContext('2d');
+  const g1 = ctx.createLinearGradient(0,0,0,200); g1.addColorStop(0,'rgba(37,99,235,0.15)'); g1.addColorStop(1,'rgba(37,99,235,0)');
+  const g2 = ctx.createLinearGradient(0,0,0,200); g2.addColorStop(0,'rgba(5,150,105,0.12)'); g2.addColorStop(1,'rgba(5,150,105,0)');
+
+  let datasets;
+  const labels = MONTHS;
+
+  if (yr === 'all') {
+    document.getElementById('lineLabel').textContent = '2023 vs 2024';
+    datasets = [
+      {label:'Revenue 2024',data:DATA[2024].rev,borderColor:'#2563eb',backgroundColor:g1,borderWidth:2,fill:true,pointRadius:3,pointBackgroundColor:'#2563eb',tension:0.4},
+      {label:'Revenue 2023',data:DATA[2023].rev,borderColor:'#93c5fd',backgroundColor:'transparent',borderWidth:1.5,fill:false,pointRadius:0,tension:0.4,borderDash:[5,4]},
+      {label:'Profit 2024', data:DATA[2024].profit,borderColor:'#059669',backgroundColor:g2,borderWidth:1.5,fill:true,pointRadius:0,tension:0.4},
+    ];
+  } else {
+    document.getElementById('lineLabel').textContent = String(yr);
+    datasets = [
+      {label:`Revenue ${yr}`,data:DATA[yr].rev,borderColor:'#2563eb',backgroundColor:g1,borderWidth:2,fill:true,pointRadius:3,pointBackgroundColor:'#2563eb',tension:0.4},
+      {label:`Profit ${yr}`, data:DATA[yr].profit,borderColor:'#059669',backgroundColor:g2,borderWidth:1.5,fill:true,pointRadius:0,tension:0.4},
+    ];
+  }
+
+  charts.line = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true,
+      plugins:{ legend:{labels:{color:'#64748b',font:{size:10},boxWidth:20,padding:14}}, tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)}} },
+      scales:{
+        x:{grid:{color:'#f0f2f7'},ticks:{color:'#94a3b8'}},
+        y:{grid:{color:'#f0f2f7'},ticks:{color:'#94a3b8',callback:v=>'$'+(v/1e6).toFixed(1)+'M'}}
+      },
+      animation:{duration:700,easing:'easeInOutQuart'}
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+// CATEGORY DONUT
+// ══════════════════════════════════════════════════
+function renderCatDonut(yr) {
+  if (charts.catDonut) charts.catDonut.destroy();
+  const d = DATA[yr].cat;
+  const total = Object.values(d).reduce((a,v)=>a+v,0);
+  const ctx = document.getElementById('catDonut').getContext('2d');
+  charts.catDonut = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels:Object.keys(d), datasets:[{data:Object.values(d),backgroundColor:Object.keys(d).map(k=>CAT_COLORS[k]),borderWidth:0,hoverOffset:5}] },
+    options:{ responsive:true, cutout:'70%', plugins:{legend:{display:false}, tooltip:{...TT,callbacks:{label:c=>' '+c.label+': '+fmt(c.raw)}}}, animation:{duration:700} }
+  });
+  document.getElementById('catLegend').innerHTML = Object.entries(d).map(([k,v])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+      <div style="width:10px;height:10px;border-radius:3px;background:${CAT_COLORS[k]};flex-shrink:0;"></div>
+      <div style="font-size:11px;color:var(--text2);flex:1;">${k}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);font-weight:600;">${fmt(v)}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);">${(v/total*100).toFixed(1)}%</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// REGION GRID
+// ══════════════════════════════════════════════════
+function renderRegionGrid(yr) {
+  const d = DATA[yr].region;
+  const maxRev = Math.max(...Object.values(d));
+  document.getElementById('regionLabel').textContent = yr==='all'?'All Regions · 2023–2024':`All Regions · ${yr}`;
+  const sorted = Object.entries(d).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('regionGrid').innerHTML = sorted.map(([name,rev])=>{
+    const isUnder = UNDERPERF.includes(name) && yr==='all';
+    const yoyVal  = REGION_YOY[name]?.yoy;
+    const yoyStr  = yoyVal !== undefined ? (yoyVal>0?`▲ +${yoyVal}%`:(yoyVal<0?`▼ ${yoyVal}%`:`→ 0.00%`)) : '';
+    const yoyColor= yoyVal>0?'var(--green)':yoyVal<0?'var(--red)':'var(--amber)';
+    const barW    = (rev/maxRev*100).toFixed(0);
+    return `<div class="rc ${isUnder?'underperf':''}">
+      <div class="rc-name">${name}</div>
+      <div class="rc-val">${fmt(rev)}</div>
+      <div class="rc-yoy" style="color:${yoyColor}">${yr==='all'?yoyStr:''}</div>
+      <div class="rc-mgr">${MGRS[name]}</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:${barW}%;background:${isUnder?'#dc2626':'#2563eb'};"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// YOY TABLE
+// ══════════════════════════════════════════════════
+function renderYoyTable() {
+  const sorted = Object.entries(REGION_YOY).sort((a,b)=>b[1].yoy-a[1].yoy);
+  document.getElementById('yoyTable').innerHTML = `
+    <thead><tr><th>Region</th><th class="td-num">2023</th><th class="td-num">2024</th><th class="td-pct">YoY %</th></tr></thead>
+    <tbody>
+    ${sorted.map(([name,d])=>{
+      const cls = d.yoy>0?'yoy-up':d.yoy<0?'yoy-down':'yoy-flat';
+      const arrow = d.yoy>0?'▲':d.yoy<0?'▼':'→';
+      return `<tr>
+        <td style="font-size:11px;font-weight:600;">${name}</td>
+        <td class="td-num">${fmt(d.r23)}</td>
+        <td class="td-num">${fmt(d.r24)}</td>
+        <td class="td-pct ${cls}">${arrow} ${pct(d.yoy)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>`;
+}
+
+// ══════════════════════════════════════════════════
+// QUARTERLY
+// ══════════════════════════════════════════════════
+function renderQuarter(yr) {
+  if (charts.quarter) charts.quarter.destroy();
+  const ctx = document.getElementById('quarterChart').getContext('2d');
+  let labels, datasets;
+  if (yr === 'all') {
+    document.getElementById('qLabel').textContent = 'Q1–Q4 · 2023 vs 2024';
+    labels = ['Q1','Q2','Q3','Q4'];
+    datasets = [
+      {label:'2023',data:DATA[2023].quarters,backgroundColor:'#93c5fd',borderRadius:5,borderSkipped:false},
+      {label:'2024',data:DATA[2024].quarters,backgroundColor:'#2563eb',borderRadius:5,borderSkipped:false},
+    ];
+  } else {
+    document.getElementById('qLabel').textContent = `Q1–Q4 · ${yr}`;
+    const cols = ['#bfdbfe','#60a5fa','#2563eb','#1d4ed8'];
+    labels = ['Q1','Q2','Q3','Q4'];
+    datasets = [{label:String(yr),data:DATA[yr].quarters,backgroundColor:cols,borderRadius:5,borderSkipped:false}];
+  }
+  charts.quarter = new Chart(ctx, {
+    type:'bar',
+    data:{labels,datasets},
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#64748b',font:{size:10},boxWidth:14,padding:12}},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#94a3b8'}},
+        y:{grid:{color:'#f0f2f7'},ticks:{color:'#94a3b8',callback:v=>'$'+(v/1e6).toFixed(1)+'M'}}
+      },
+      animation:{duration:600}
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+// TIER
+// ══════════════════════════════════════════════════
+function renderTiers(yr) {
+  const d = DATA[yr].tiers;
+  const total = Object.values(d).reduce((a,v)=>a+v,0);
+  document.getElementById('tierList').innerHTML = Object.entries(d).map(([name,rev])=>{
+    const p = (rev/total*100).toFixed(1);
+    return `<div class="tier-item">
+      <div class="tier-color" style="background:${TIER_COLORS[name]};"></div>
+      <div class="tier-name">${name}</div>
+      <div class="tier-bar-wrap"><div class="tier-bar-fill" style="width:${p}%;background:${TIER_COLORS[name]};"></div></div>
+      <div class="tier-pct">${p}%</div>
+      <div class="tier-rev">${fmt(rev)}</div>
+    </div>`;
+  }).join('');
+
+  if (charts.tierDonut) charts.tierDonut.destroy();
+  const ctx = document.getElementById('tierDonut').getContext('2d');
+  charts.tierDonut = new Chart(ctx, {
+    type:'doughnut',
+    data:{labels:Object.keys(d),datasets:[{data:Object.values(d),backgroundColor:Object.keys(d).map(k=>TIER_COLORS[k]),borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,cutout:'72%',plugins:{legend:{position:'right',labels:{color:'#64748b',font:{size:10},boxWidth:10,padding:8}},tooltip:{...TT,callbacks:{label:c=>' '+c.label+': '+fmt(c.raw)}}},animation:{duration:700}}
+  });
+}
+
+// ══════════════════════════════════════════════════
+// PRODUCTS
+// ══════════════════════════════════════════════════
+function renderProducts() {
+  const maxRev = PRODUCTS[0].rev;
+  const catBg  = {Electronics:'#dbeafe',Furniture:'#ede9fe',Stationery:'#cffafe'};
+  const catFg  = {Electronics:'#2563eb',Furniture:'#7c3aed',Stationery:'#0891b2'};
+  document.getElementById('productList').innerHTML = PRODUCTS.map((p,i)=>{
+    const barW = (p.rev/maxRev*100).toFixed(0);
+    const cc   = CAT_COLORS[p.cat];
+    return `<div class="prod-row">
+      <div class="prod-top">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="rank-n ${i<3?'top3':''}">${i+1}</span>
+          <span class="prod-name">${p.name}</span>
+        </div>
+        <span class="prod-rev">${fmt(p.rev)}</span>
+      </div>
+      <div class="prod-meta">
+        <span class="prod-cat" style="background:${catBg[p.cat]};color:${catFg[p.cat]};">${p.cat}</span>
+        <span class="prod-margin">Margin: ${p.margin}%</span>
+        <span style="font-size:9px;color:var(--subtle);font-family:'IBM Plex Mono',monospace;">${p.units.toLocaleString()} units</span>
+      </div>
+      <div class="prod-bar"><div class="prod-fill" style="width:${barW}%;background:linear-gradient(90deg,${cc},${cc}88);"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// DISCOUNT CHART
+// ══════════════════════════════════════════════════
+function renderDiscount() {
+  if (charts.disc) charts.disc.destroy();
+  const ctx = document.getElementById('discountChart').getContext('2d');
+  charts.disc = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:DISCOUNTS.map(d=>d.pct),
+      datasets:[{data:DISCOUNTS.map(d=>d.rev),backgroundColor:['#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe'],borderRadius:6,borderSkipped:false}]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' '+fmt(c.raw)}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#94a3b8'}},y:{grid:{color:'#f0f2f7'},ticks:{color:'#94a3b8',callback:v=>'$'+(v/1e6).toFixed(0)+'M'}}},
+      animation:{duration:600}
+    }
+  });
+  document.getElementById('discPills').innerHTML = DISCOUNTS.map(d=>`
+    <div class="disc-pill">
+      <div class="disc-label">${d.pct}</div>
+      <div class="disc-val">${fmt(d.rev)}</div>
+      <div class="disc-count">${d.count.toLocaleString()} orders</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// UNDERPERFORMING CHART
+// ══════════════════════════════════════════════════
+function renderUnder() {
+  if (charts.under) charts.under.destroy();
+  const ctx = document.getElementById('underChart').getContext('2d');
+  const sorted = Object.entries(DATA.all.region).sort((a,b)=>a[1]-b[1]);
+  const colors = sorted.map(([name])=>UNDERPERF.includes(name)?'#dc2626':'#2563eb');
+  charts.under = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:sorted.map(e=>e[0].replace(' ','\n')),
+      datasets:[
+        {data:sorted.map(e=>e[1]),backgroundColor:colors,borderRadius:5,borderSkipped:false,label:'Revenue'},
+        {data:Array(8).fill(REGION_AVG),type:'line',borderColor:'#f59e0b',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false,label:'Avg $7.25M'}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#64748b',font:{size:10},boxWidth:14,padding:10}},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:9}}},y:{grid:{color:'#f0f2f7'},ticks:{color:'#94a3b8',callback:v=>'$'+(v/1e6).toFixed(0)+'M'}}},
+      animation:{duration:600}
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+// MARGIN TABLE
+// ══════════════════════════════════════════════════
+function renderMarginTable() {
+  const maxRev = PRODUCTS[0].rev;
+  const catBg  = {Electronics:'#dbeafe',Furniture:'#ede9fe',Stationery:'#cffafe'};
+  const catFg  = {Electronics:'#2563eb',Furniture:'#7c3aed',Stationery:'#0891b2'};
+  document.getElementById('marginTable').innerHTML = PRODUCTS.map((p,i)=>{
+    const barW = (p.rev/maxRev*100).toFixed(0);
+    const mc   = p.margin>=60?'var(--green)':p.margin>=45?'var(--blue)':'var(--amber)';
+    return `<tr>
+      <td><span class="rank-n ${i<3?'top3':''}" style="font-size:11px;">${i+1}</span></td>
+      <td style="font-size:11px;font-weight:600;color:var(--text);">${p.name}</td>
+      <td><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:${catBg[p.cat]};color:${catFg[p.cat]};font-weight:600;">${p.cat}</span></td>
+      <td class="td-num">${fmt(p.rev)}</td>
+      <td class="td-num">${fmt(p.profit)}</td>
+      <td class="td-pct" style="color:${mc};font-weight:700;">${p.margin}%</td>
+      <td class="td-bar"><div class="mini-bar"><div class="mini-fill" style="width:${barW}%;background:${CAT_COLORS[p.cat]};"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// MOVING AVERAGE CHART
+// ══════════════════════════════════════════════════
+function renderMovingAvg() {
+  if (charts.movAvg) charts.movAvg.destroy();
+  // Compute 3-month moving averages per category from monthly data
+  const elec23 = [1476431,1362161,1361140,1406716,1367540,1390279,1423070,1409310,1298935,1406094,1351432,1316967];
+  const furn23 = [886219,817249,817078,845024,820551,835655,855665,847367,780534,845376,812167,785506];
+  const stat23 = [73440,67706,67683,74168,68854,72283,76017,75937,63965,72073,68400,70183];
+
+  function movAvg3(arr) {
+    return arr.map((v,i) => {
+      const vals = arr.slice(Math.max(0,i-2), i+1);
+      return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    });
+  }
+
+  const ctx = document.getElementById('movingAvgChart').getContext('2d');
+  charts.movAvg = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels:MONTHS,
+      datasets:[
+        {label:'Electronics (3M MA)',data:movAvg3(elec23),borderColor:'#2563eb',borderWidth:2,fill:false,pointRadius:2,tension:0.4},
+        {label:'Furniture (3M MA)',  data:movAvg3(furn23),borderColor:'#7c3aed',borderWidth:2,fill:false,pointRadius:2,tension:0.4},
+        {label:'Stationery (3M MA)', data:movAvg3(stat23),borderColor:'#0891b2',borderWidth:1.5,fill:false,pointRadius:2,tension:0.4,borderDash:[4,3]},
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{labels:{color:'#64748b',font:{size:10},boxWidth:20,padding:12}},
+        tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)}},
+        annotation:{}
+      },
+      scales:{
+        x:{grid:{color:'#f0f2f7'},ticks:{color:'#94a3b8'}},
+        y:{grid:{color:'#f0f2f7'},ticks:{color:'#94a3b8',callback:v=>'$'+(v/1e3).toFixed(0)+'K'}}
+      },
+      animation:{duration:700}
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════
+function renderAll(yr) {
+  renderKPIs(yr);
+  renderLine(yr);
+  renderCatDonut(yr);
+  renderRegionGrid(yr);
+  renderQuarter(yr);
+  renderTiers(yr);
+}
+
+function setYear(yr, btn) {
+  activeYear = yr;
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAll(yr);
+}
+
+// Static (not year-filtered)
+renderYoyTable();
+renderProducts();
+renderDiscount();
+renderUnder();
+renderMarginTable();
+renderMovingAvg();
+
+// Dynamic
+renderAll('all');
+</script>
+</body>
+</html>
