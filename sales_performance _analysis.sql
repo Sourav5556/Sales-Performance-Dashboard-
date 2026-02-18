@@ -19,20 +19,20 @@ CREATE TABLE sales (
 WITH yearly_revenue AS (
     SELECT
         region,
-        YEAR(sale_date)                        AS sale_year,
-        SUM(revenue)                           AS total_revenue
+        YEAR(sale_date) AS sale_year,
+        SUM(revenue)  AS total_revenue
     FROM sales
     GROUP BY region, YEAR(sale_date)
 )
 SELECT
     curr.region,
     curr.sale_year,
-    curr.total_revenue                         AS current_revenue,
-    prev.total_revenue                         AS previous_revenue,
+    curr.total_revenue AS current_revenue,
+    prev.total_revenue AS previous_revenue,
     ROUND(
         (curr.total_revenue - prev.total_revenue) 
         / prev.total_revenue * 100, 2
-    )                                          AS yoy_growth_pct
+    )    AS yoy_growth_pct
 FROM yearly_revenue curr
 LEFT JOIN yearly_revenue prev
     ON curr.region = prev.region
@@ -46,8 +46,8 @@ ORDER BY curr.region, curr.sale_year;
 WITH monthly_revenue AS (
     SELECT
         product_category,
-        DATE_FORMAT(sale_date, '%Y-%m')        AS sale_month,
-        SUM(revenue)                           AS total_revenue
+        DATE_FORMAT(sale_date, '%Y-%m') AS sale_month,
+        SUM(revenue) AS total_revenue
     FROM sales
     GROUP BY product_category, DATE_FORMAT(sale_date, '%Y-%m')
 )
@@ -61,7 +61,7 @@ SELECT
             ORDER BY sale_month
             ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
         ), 2
-    )                                          AS moving_avg_3m
+    )   AS moving_avg_3m
 FROM monthly_revenue
 ORDER BY product_category, sale_month;
 
@@ -72,14 +72,14 @@ ORDER BY product_category, sale_month;
 WITH first_purchase AS (
     SELECT
         customer_id,
-        MIN(YEAR(sale_date))                   AS first_year
+        MIN(YEAR(sale_date)) AS first_year
     FROM sales
     GROUP BY customer_id
 ),
 returning_customers AS (
     SELECT
         f.first_year,
-        COUNT(DISTINCT s.customer_id)          AS retained_customers
+        COUNT(DISTINCT s.customer_id) AS retained_customers
     FROM first_purchase f
     JOIN sales s
         ON f.customer_id = s.customer_id
@@ -89,7 +89,7 @@ returning_customers AS (
 total_customers AS (
     SELECT
         first_year,
-        COUNT(DISTINCT customer_id)            AS total_customers
+        COUNT(DISTINCT customer_id)  AS total_customers
     FROM first_purchase
     GROUP BY first_year
 )
@@ -99,7 +99,7 @@ SELECT
     r.retained_customers,
     ROUND(
         r.retained_customers / t.total_customers * 100, 2
-    )                                          AS retention_rate_pct
+    ) AS retention_rate_pct
 FROM total_customers t
 LEFT JOIN returning_customers r
     ON t.first_year = r.first_year
@@ -112,17 +112,17 @@ ORDER BY t.first_year;
 WITH region_revenue AS (
     SELECT
         region,
-        SUM(revenue)                           AS total_revenue
+        SUM(revenue) AS total_revenue
     FROM sales
     GROUP BY region
 )
 SELECT
     region,
     total_revenue,
-    ROUND(AVG(total_revenue) OVER (), 2)       AS avg_revenue,
+    ROUND(AVG(total_revenue) OVER (), 2) AS avg_revenue,
     ROUND(
         total_revenue - AVG(total_revenue) OVER (), 2
-    )                                          AS variance_from_avg
+    ) AS variance_from_avg
 FROM region_revenue
 ORDER BY total_revenue ASC;
 
@@ -137,10 +137,10 @@ BEGIN
     SELECT
         region,
         product_category,
-        MONTH(sale_date)                       AS sale_month,
-        SUM(revenue)                           AS total_revenue,
-        SUM(units_sold)                        AS total_units,
-        COUNT(DISTINCT customer_id)            AS unique_customers,
+        MONTH(sale_date) AS sale_month,
+        SUM(revenue)     AS total_revenue,
+        SUM(units_sold)  AS total_units,
+        COUNT(DISTINCT customer_id)AS unique_customers,
         ROUND(SUM(revenue) / SUM(units_sold), 2) AS avg_revenue_per_unit
     FROM sales
     WHERE YEAR(sale_date) = report_year
